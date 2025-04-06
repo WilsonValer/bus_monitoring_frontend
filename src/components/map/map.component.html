@@ -1,5 +1,28 @@
-<p>map works!</p>
-<google-map width="100%" height="400px" [center]="center" [zoom]="zoom">
+<google-map *ngIf="mapLoaded" width="100%" height="900px" [center]="center" [zoom]="zoom">
     <map-marker [position]="center"></map-marker>
-</google-map>
+  
+    <map-marker
+    *ngFor="let stop of busStops"
+    [position]="stop.position"
+    [label]="stop.label"
+    [title]="stop.title"
+    [icon]="stop.icon"
+    (mapClick)="openInfoWindow(stop, marker)"
+    #marker="mapMarker">
+  </map-marker>
+  <map-polyline [path]="busRoute" [options]="routeOptions"></map-polyline>
+  <map-info-window #infoWindow="mapInfoWindow">
+    <div class="custom-info-window">
+      <strong>{{ selectedStop?.title }}</strong><br />
+      <small>{{ selectedStop?.description }}</small>
+  
+      <div class="bus-lines">
+        <span *ngFor="let line of selectedStop?.lines" class="bus-tag" [style.background]="line.color">
+          {{ line.code }}
+        </span>
+      </div>
+    </div>
+  </map-info-window>
+
+  </google-map>
   

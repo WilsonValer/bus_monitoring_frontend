@@ -2,7 +2,9 @@
   <span>Usuario: {{ user?.username }}</span>
   <span>Código usuario: {{ user?.user_id }}</span>
 
-  <label for="vehicleSelect"> <span>Tus vehículos:</span></label>
+  <label for="vehicleSelect">
+    <span>Tus vehículos:</span>
+  </label>
   <select #veh (change)="onSelectVehicle(veh.value)" [value]="selectedVehicle">
     <option *ngFor="let v of vehicles" [value]="v.placa">
       {{ v.placa }}
@@ -11,3 +13,5 @@
 
   <button (click)="onLogout()">Cerrar Sesión</button>
 </nav>
+
+
