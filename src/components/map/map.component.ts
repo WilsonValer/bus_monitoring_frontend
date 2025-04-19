@@ -6,6 +6,13 @@ import { ViewChild } from '@angular/core';
 import { MapInfoWindow, MapMarker } from '@angular/google-maps';
 import { getBusStops, BusStop} from '../../bus-stops';
 import { Loader } from '@googlemaps/js-api-loader';
+import { SocketService } from '../../services/socket.service';
+
+function parseCoordinates(lat: any, lng: any): google.maps.LatLngLiteral | null {
+  const latNum = parseFloat(lat?.toString() ?? '');
+  const lngNum = parseFloat(lng?.toString() ?? '');
+  return isNaN(latNum) || isNaN(lngNum) ? null : { lat: latNum, lng: lngNum };
+}
 
 @Component({
   selector: 'app-map',
@@ -15,12 +22,14 @@ import { Loader } from '@googlemaps/js-api-loader';
   styleUrls: ['./map.component.css']
 })
 
+
 export class MapComponent implements OnInit {
   center: google.maps.LatLngLiteral = { lat: -12.0464, lng: -77.0428 }; // Default: Lima, Perú
   zoom = 12;
   busStops: BusStop[] = [];
   busRoute: google.maps.LatLngLiteral[] = [];
   mapLoaded = false;
+  busMarker: google.maps.Marker | null = null;
 
   //@ViewChild(MapInfoWindow) infoWindow!: MapInfoWindow;
   @ViewChild('infoWindow') infoWindow!: MapInfoWindow;
@@ -46,13 +55,36 @@ routeOptions: google.maps.PolylineOptions = {
 
   constructor(
     private vehicleSelectionService: VehicleSelectionService,
-    private vehicleService: VehicleService
+    private vehicleService: VehicleService,
+    private socketService: SocketService
   ) {}
 
   ngOnInit(): void {
+    // Cargar el mapa y las rutas
+    this.loadMap();
+
+    // Suscribirse al evento WebSocket 'new-sensor-data'
+  // Suscribirse al evento WebSocket 'new-sensor-data'
+  this.socketService
+  .onEvent<{ latitude: string | number; longitude: string | number; velocidad: number }>('new-sensor-data')
+  .subscribe({
+    next: (data) => {
+      const coords = parseCoordinates(data.latitude, data.longitude);
+      if (!coords) {
+        console.warn('Coordenadas inválidas recibidas del WebSocket:', data);
+        return;
+      }
+      this.updateVehicleLocation(coords.lat, coords.lng);
+    },
+    error: (err) => console.error('Error al recibir datos del WebSocket:', err),
+  });
+
+  }
+
+  loadMap(): void {
     const loader = new Loader({
-      apiKey: 'AIzaSyDIrnsD4r1ZFH6rnjcrXtw-vKLK80QYIHY', // 👈 Aquí pones tu API KEY
-      version: 'weekly'
+      apiKey: 'AIzaSyDIrnsD4r1ZFH6rnjcrXtw-vKLK80QYIHY',
+      version: 'weekly',
     });
 
     loader.load().then(() => {
@@ -60,28 +92,80 @@ routeOptions: google.maps.PolylineOptions = {
       this.busStops = getBusStops();
 
       // Suscribirse a cambios en la selección del vehículo
-      this.vehicleSelectionService.selectedVehicle$.subscribe(placa => {
+      this.vehicleSelectionService.selectedVehicle$.subscribe((placa) => {
         console.log('Placa recibida en MapComponent:', placa);
         if (placa) {
-          // Hacer una petición al backend para obtener la ubicación real
+
           this.vehicleService.getVehicleLocationByPlate(placa).subscribe({
-            next: (location) => {
-              const latNum = parseFloat(location.latitude.toString());
-              const lngNum = parseFloat(location.longitude.toString());
-              this.center = { lat: latNum, lng: lngNum };
-              console.log(`Ubicación actualizada: ${location.latitude}, ${location.longitude}`);
-            },
-            error: (err) => console.error('Error al obtener ubicación:', err)
-          });
+          next: (location) => {
+            const coords = parseCoordinates(location.latitude, location.longitude);
+            if (!coords) {
+              console.warn('Coordenadas inválidas recibidas del servicio:', location);
+              return;
+            }
+            this.updateVehicleLocation(coords.lat, coords.lng);
+          },
+          error: (err) => console.error('Error al obtener ubicación:', err),
+        });
+
         }
       });
+
       this.loadCompleteRoute();
-
     });
-
-    
-
   }
+
+updateVehicleLocation(latitude: number, longitude: number): void {
+  const newPosition = { lat: latitude, lng: longitude };
+
+  if (!this.busMarker) {
+    // Si el marcador aún no existe, créalo
+    this.busMarker = new google.maps.Marker({
+      position: newPosition,
+      map: (document.getElementsByTagName('google-map')[0] as any).map, // o usa @ViewChild si prefieres
+      title: 'Bus en tiempo real',
+      icon: {
+        url: 'https://maps.gstatic.com/intl/en_us/mapfiles/markers2/measle.png',
+        scaledSize: new google.maps.Size(10, 10),
+      },
+    });
+  } else {
+    // Si ya existe, animamos el movimiento suavemente
+    this.animateMarkerTo(this.busMarker, newPosition, 1000); // duración 1 segundo
+  }
+
+  // También puedes mover el centro si lo deseas:
+  this.center = newPosition;
+}
+
+animateMarkerTo(marker: google.maps.Marker, newPosition: google.maps.LatLngLiteral, duration: number): void {
+  const start = marker.getPosition();
+  if (!start) return;
+
+  const startLat = start.lat();
+  const startLng = start.lng();
+  const deltaLat = newPosition.lat - startLat;
+  const deltaLng = newPosition.lng - startLng;
+
+  let startTime: number | null = null;
+
+  const animate = (timestamp: number) => {
+    if (!startTime) startTime = timestamp;
+    const progress = Math.min((timestamp - startTime) / duration, 1);
+
+    const currentLat = startLat + deltaLat * progress;
+    const currentLng = startLng + deltaLng * progress;
+
+    marker.setPosition({ lat: currentLat, lng: currentLng });
+
+    if (progress < 1) {
+      requestAnimationFrame(animate);
+    }
+  };
+
+  requestAnimationFrame(animate);
+}
+
 
   // ⚡ Método nuevo: carga la ruta real con Google Directions API
   loadCompleteRoute(): void {

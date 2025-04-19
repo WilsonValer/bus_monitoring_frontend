@@ -22,16 +22,26 @@ export class VehicleService {
   }
     // 🔹 Nuevo método para obtener la ubicación en tiempo real de un vehículo por su placa
   // 🔹 Obtener la última ubicación del vehículo basado en la placa
-  getVehicleLocationByPlate(placa: string): Observable<{ latitude: number; longitude: number }> {
-    const token = this.authService.getToken(); 
-    const headers = new HttpHeaders({
-      'Authorization': `Bearer ${token}` 
-    });
-  
-    return this.http.get<{ latitude: number; longitude: number }>(
-      `${this.apiUrl}/location/${placa}`,
-      { headers }
-    );
+  getVehicleLocationByPlate(placa: string): Observable<{
+  latitude: number | string;
+  longitude: number | string;
+  velocidad: number;
+  timestamp: string;
+  }> {
+  const token = this.authService.getToken();
+  const headers = new HttpHeaders({
+    'Authorization': `Bearer ${token}`
+  });
+
+  return this.http.get<{
+    latitude: number | string;
+    longitude: number | string;
+    velocidad: number;
+    timestamp: string;
+  }>(
+    `${this.apiUrl}/location/${placa}`,
+    { headers }
+  );
   }
 }
 

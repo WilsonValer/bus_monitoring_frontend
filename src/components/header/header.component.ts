@@ -3,13 +3,14 @@ import { CommonModule, NgFor, NgIf } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
 import { VehicleService, VehicleSelectionService } from '../../services/vehicle.service';
 import { MapComponent } from '../map/map.component';
+import { BusReportComponent } from '../bus-report/bus-report.component';
 //import { HttpClientModule } from '@angular/common/http';
 // imports: [CommonModule, HttpClientModule, NgIf, NgFor],
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [CommonModule, NgFor],
+  imports: [CommonModule, NgFor, BusReportComponent],
   templateUrl: './header.component.html',
   styleUrls: ['./header.component.css']
 })

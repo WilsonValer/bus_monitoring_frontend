@@ -1,1 +1,61 @@
-/* You can add global styles to this file, and also import other style files */
+/* src/app/components/bus-report/bus-report.component.scss */
+.bus-report {
+  text-align: center;
+  margin-top: 2rem;
+}
+
+.bus-report button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 1.5rem;
+  font-weight: 600;
+  background: linear-gradient(135deg, #4facfe 0%, #039c55 100%);
+  color: #fff;
+  border: none;
+  border-radius: 2rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: 
+    background 0.3s ease, 
+    transform 0.2s ease, 
+    box-shadow 0.2s ease;
+}
+
+.bus-report button .icon {
+  font-size: 1.2rem;
+}
+
+.bus-report button:hover {
+  background: linear-gradient(-135deg, #4facfe 0%, #00f2fe 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+}
+
+.bus-report button:active {
+  transform: translateY(0);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+}
+
+
+/* Asegura que cada elemento dentro del nav sea un flex-item centrado */
+nav {
+  display: flex;
+  align-items: center;
+}
+
+/* Aplica display:flex + align-items:center a cada hijo de nav */
+nav > * {
+  display: flex;
+  align-items: center;
+}
+
+/* Opcional: un poco de separación horizontal entre elementos */
+nav > * + * {
+  margin-left: 1rem;
+}
+
+/* Quita cualquier margin-top residual de tu componente bus-report */
+.bus-report {
+  margin: 0; /* o usa margin: 0 1rem; si quieres separación */
+}
