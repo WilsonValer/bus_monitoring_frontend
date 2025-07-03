@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, BehaviorSubject } from 'rxjs';
 import { AuthService } from './auth.service';
+import { tap } from 'rxjs/operators';
 
 
 @Injectable({
@@ -41,6 +42,10 @@ export class VehicleService {
   }>(
     `${this.apiUrl}/location/${placa}`,
     { headers }
+  ).pipe(
+    tap(response => {
+      console.log(`Ubicación del vehículo:`, response.timestamp);
+    })
   );
   }
 }

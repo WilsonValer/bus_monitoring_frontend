@@ -4,6 +4,12 @@
   margin-top: 2rem;
 }
 
+body {
+  background: linear-gradient(135deg, #e0f7fa 0%, #169aa0de 100%);
+  min-height: 100vh;
+  margin: 0;
+}
+
 .bus-report button {
   display: inline-flex;
   align-items: center;

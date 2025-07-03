@@ -20,7 +20,7 @@ body {
   
   /* Caja de Login */
   .login-box {
-    background: white;
+    background: #039c5573;
     padding: 30px;
     border-radius: 10px;
     box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
@@ -79,7 +79,7 @@ body {
     display: block;
     margin-top: 10px;
     font-size: 14px;
-    color: #16a085;
+    color: #fff;
     text-decoration: none;
   }
   

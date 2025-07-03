@@ -7,6 +7,7 @@ import { MapInfoWindow, MapMarker } from '@angular/google-maps';
 import { getBusStops, BusStop} from '../../bus-stops';
 import { Loader } from '@googlemaps/js-api-loader';
 import { SocketService } from '../../services/socket.service';
+import { GoogleMap } from '@angular/google-maps';
 
 function parseCoordinates(lat: any, lng: any): google.maps.LatLngLiteral | null {
   const latNum = parseFloat(lat?.toString() ?? '');
@@ -30,6 +31,12 @@ export class MapComponent implements OnInit {
   busRoute: google.maps.LatLngLiteral[] = [];
   mapLoaded = false;
   busMarker: google.maps.Marker | null = null;
+
+
+  // ...existing code...
+// *paradero* Guarda la hora de llegada por paradero
+arrivalTimes: { [label: string]: { timestamp: string; velocidad: number } } = {}; 
+
 
   //@ViewChild(MapInfoWindow) infoWindow!: MapInfoWindow;
   @ViewChild('infoWindow') infoWindow!: MapInfoWindow;
@@ -63,7 +70,7 @@ routeOptions: google.maps.PolylineOptions = {
     // Cargar el mapa y las rutas
     this.loadMap();
 
-    // Suscribirse al evento WebSocket 'new-sensor-data'
+
   // Suscribirse al evento WebSocket 'new-sensor-data'
   this.socketService
   .onEvent<{ latitude: string | number; longitude: string | number; velocidad: number }>('new-sensor-data')
@@ -75,6 +82,10 @@ routeOptions: google.maps.PolylineOptions = {
         return;
       }
       this.updateVehicleLocation(coords.lat, coords.lng);
+      //*paradero* 
+      const timestamp = new Date().toLocaleTimeString('es-PE', { hour12: true });
+      this.checkArrival(coords.lat, coords.lng, timestamp, data.velocidad);
+
     },
     error: (err) => console.error('Error al recibir datos del WebSocket:', err),
   });
@@ -114,7 +125,7 @@ routeOptions: google.maps.PolylineOptions = {
       this.loadCompleteRoute();
     });
   }
-
+@ViewChild('map', { static: false }) map!: GoogleMap;
 updateVehicleLocation(latitude: number, longitude: number): void {
   const newPosition = { lat: latitude, lng: longitude };
 
@@ -122,11 +133,13 @@ updateVehicleLocation(latitude: number, longitude: number): void {
     // Si el marcador aún no existe, créalo
     this.busMarker = new google.maps.Marker({
       position: newPosition,
-      map: (document.getElementsByTagName('google-map')[0] as any).map, // o usa @ViewChild si prefieres
+      map: (document.getElementsByTagName('google-map')[0] as any).map,
+      //map: this.map.googleMap, // o usa @ViewChild si prefieres
       title: 'Bus en tiempo real',
       icon: {
-        url: 'https://maps.gstatic.com/intl/en_us/mapfiles/markers2/measle.png',
-        scaledSize: new google.maps.Size(10, 10),
+        url: 'https://maps.google.com/mapfiles/kml/shapes/bus.png',
+        scaledSize: new google.maps.Size(30, 30),
+
       },
     });
   } else {
@@ -137,6 +150,33 @@ updateVehicleLocation(latitude: number, longitude: number): void {
   // También puedes mover el centro si lo deseas:
   this.center = newPosition;
 }
+
+// *paradero* ...existing code...
+
+checkArrival(lat: number, lng: number, timestamp: string, velocidad: number) {
+  const tolerance = 0.0001;
+
+  for (const stop of this.busStops) {
+    if (
+      !this.arrivalTimes[stop.label] &&
+      Math.abs(lat - stop.position.lat) < tolerance &&
+      Math.abs(lng - stop.position.lng) < tolerance
+    ) {
+      // Guardar timestamp y velocidad como objeto
+      this.arrivalTimes[stop.label] = {
+        timestamp,
+        velocidad
+      };
+
+      // Persistir en localStorage
+      localStorage.setItem('arrivalTimes', JSON.stringify(this.arrivalTimes));
+
+      console.log(`Llegada registrada en paradero ${stop.title}`);
+      console.log(`Hora: ${timestamp} |  Velocidad: ${velocidad} km/h`);
+    }
+  }
+}
+// ...existing code...
 
 animateMarkerTo(marker: google.maps.Marker, newPosition: google.maps.LatLngLiteral, duration: number): void {
   const start = marker.getPosition();
